@@ -49,39 +49,56 @@ Interface inspirée de l'app Stark Varg — thème sombre racing, données temps
 
 ### Prérequis
 - Node.js 18+
-- [Expo CLI](https://docs.expo.dev/get-started/installation/)
-- Application **Expo Go** sur ton téléphone **OU** build natif
+- `npm install -g expo-cli eas-cli`
+- **Pour iOS** : Mac avec Xcode 15+ et un compte Apple Developer (gratuit suffit pour le déploiement sur ton propre iPhone)
+- **Pour Android** : Android Studio ou un appareil en mode débogage USB
 
-```bash
-npm install -g expo-cli
-```
+> **Important** : Le Bluetooth BLE ne fonctionne pas dans Expo Go. Un **build natif est obligatoire**.
 
-### Lancer l'application
+---
+
+### Option 1 — Build local (Mac requis pour iOS)
 
 ```bash
 cd surron-app
 npm install
-npx expo start
-```
 
-Scanner le QR code avec **Expo Go** (Android) ou l'app Caméra (iOS).
+# iOS — ouvre Xcode et déploie sur ton iPhone
+npx expo run:ios --device
 
-### Build natif (recommandé pour le Bluetooth)
-
-> Le Bluetooth BLE nécessite un build natif — Expo Go ne supporte pas `react-native-ble-plx`.
-
-```bash
 # Android
 npx expo run:android
-
-# iOS
-npx expo run:ios
 ```
 
-Ou utilise EAS Build :
+Pour iOS, Xcode s'ouvrira automatiquement. Dans Xcode :
+1. Sélectionne ton iPhone dans la liste des appareils
+2. Change le **Team** dans `Signing & Capabilities` (ton compte Apple)
+3. Appuie sur **Run** ▶
+
+---
+
+### Option 2 — EAS Build (recommandé, pas besoin de Mac)
+
+EAS Build compile dans le cloud. Tu reçois un `.ipa` (iOS) ou `.apk` (Android) à installer directement.
+
 ```bash
 npm install -g eas-cli
-eas build --platform android --profile development
+eas login          # crée un compte Expo gratuit si besoin
+
+cd surron-app
+npm install
+
+# Build iOS (envoi sur TestFlight ou installation via lien)
+eas build --platform ios --profile preview
+
+# Build Android APK
+eas build --platform android --profile preview
+```
+
+Pour iOS sans compte Apple Developer payant, utilise le profil `development` avec un device enregistré :
+```bash
+eas device:create          # enregistre l'UDID de ton iPhone
+eas build --platform ios --profile development
 ```
 
 ---

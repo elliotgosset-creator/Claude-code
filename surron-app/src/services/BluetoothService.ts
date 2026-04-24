@@ -75,6 +75,7 @@ class BluetoothService {
       ]);
       return Object.values(granted).every(v => v === PermissionsAndroid.RESULTS.GRANTED);
     }
+    // iOS: permissions are handled by the system dialog triggered on first BLE scan
     return true;
   }
 
@@ -85,8 +86,13 @@ class BluetoothService {
     this.setStatus('scanning');
     const found = new Set<string>();
 
+    // Scan with null on iOS: many peripherals don't include service UUIDs in
+    // their advertising packets, so filtering by UUID would miss them.
+    // We filter by device name instead.
+    const serviceUUIDs = Platform.OS === 'android' ? [TORP_BLE.SERVICE_UUID] : null;
+
     this.manager.startDeviceScan(
-      [TORP_BLE.SERVICE_UUID],
+      serviceUUIDs,
       { allowDuplicates: false },
       (error, device) => {
         if (error) {
@@ -94,11 +100,16 @@ class BluetoothService {
           onError?.(error);
           return;
         }
-        if (device && device.name?.startsWith(TORP_BLE.DEVICE_NAME_PREFIX) && !found.has(device.id)) {
+        if (
+          device &&
+          (device.name?.startsWith(TORP_BLE.DEVICE_NAME_PREFIX) ||
+           device.localName?.startsWith(TORP_BLE.DEVICE_NAME_PREFIX)) &&
+          !found.has(device.id)
+        ) {
           found.add(device.id);
           onDeviceFound({
             id: device.id,
-            name: device.name ?? 'TORP 500',
+            name: device.name ?? device.localName ?? 'TORP 500',
             rssi: device.rssi ?? -100,
           });
         }
@@ -116,10 +127,12 @@ class BluetoothService {
     this.setStatus('connecting');
 
     try {
-      const device = await this.manager.connectToDevice(deviceId, {
-        autoConnect: false,
-        requestMTU: 256,
-      });
+      // requestMTU is Android-only; iOS negotiates MTU automatically
+      const connectOptions = Platform.OS === 'android'
+        ? { autoConnect: false, requestMTU: 185 }
+        : { autoConnect: false };
+
+      const device = await this.manager.connectToDevice(deviceId, connectOptions);
 
       await device.discoverAllServicesAndCharacteristics();
       this.connectedDevice = device;

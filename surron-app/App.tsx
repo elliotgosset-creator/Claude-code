@@ -1,3 +1,7 @@
+import { Buffer } from 'buffer';
+// Polyfill Buffer for react-native-ble-plx base64 encoding on iOS & Android
+(global as any).Buffer = Buffer;
+
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
